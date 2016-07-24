@@ -10,19 +10,16 @@ Sample usage:
 package main
 
 import (
-	"fmt"
 	"log"
+
 	"creek"
 )
 
 func main() {
-	fmt.Println("Starting test of creek logger...")
+	// Create a new logger.
+	logger := log.New(creek.New("/var/log/your_app/http.log", 1), "Logged: ", log.Lshortfile|log.LstdFlags)
 
-	logger := log.New(&creek.Logger{Filename: "/var/log/maildblog/http.log", MaxSize: 1}, "Logger: ", log.Lshortfile|log.LstdFlags)
-
+	// Print to the log.
 	logger.Println("Testing the log file")
-	logger.Println("Testing the log file again")
-
-	fmt.Println("Log finished.")
 }
 ```

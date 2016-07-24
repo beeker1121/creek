@@ -3,12 +3,12 @@ package creek
 import (
 	"fmt"
 	"os"
-	"time"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
-// Defines our custom Logger type, which implements io.Writer.
+// Logger defines our custom Logger type.
 type Logger struct {
 	Filename string
 	MaxSize  int64
@@ -17,7 +17,15 @@ type Logger struct {
 	mu       sync.Mutex
 }
 
-// Implement Write to satisfy the io.Writer interface.
+// New creates a new creek logger.
+func New(filename string, maxSize int64) *Logger {
+	return &Logger{
+		Filename: filename,
+		MaxSize:  maxSize,
+	}
+}
+
+// Write satisfies the io.Writer interface.
 func (l *Logger) Write(p []byte) (n int, err error) {
 	// Lock the mutex.
 	l.mu.Lock()
@@ -38,7 +46,7 @@ func (l *Logger) Write(p []byte) (n int, err error) {
 	}
 
 	// If writing the new data will go over our max file size, rotate the log file.
-	if l.size + writeLen > l.maxSize() {
+	if l.size+writeLen > l.maxSize() {
 		if err := l.rotate(); err != nil {
 			return 0, err
 		}
@@ -51,7 +59,7 @@ func (l *Logger) Write(p []byte) (n int, err error) {
 	return n, err
 }
 
-// Close the log file if it's open.
+// close closes the log file if it's open.
 func (l *Logger) close() error {
 	if l.file == nil {
 		return nil
@@ -63,7 +71,7 @@ func (l *Logger) close() error {
 	return err
 }
 
-// Rotate the log file.
+// rotate rotates the log file.
 func (l *Logger) rotate() error {
 	// Close the current log file.
 	if err := l.close(); err != nil {
@@ -78,7 +86,7 @@ func (l *Logger) rotate() error {
 	return nil
 }
 
-// Try to open the existing log file.
+// openExistingOrNew tries to open the existing log file.
 func (l *Logger) openExistingOrNew(writeLen int) error {
 	// Get or create the log file.
 	info, err := os.Stat(l.Filename)
@@ -90,7 +98,7 @@ func (l *Logger) openExistingOrNew(writeLen int) error {
 	}
 
 	// See if we should rotate the log file.
-	if info.Size() + int64(writeLen) >= l.maxSize() {
+	if info.Size()+int64(writeLen) >= l.maxSize() {
 		return l.rotate()
 	}
 
@@ -107,7 +115,8 @@ func (l *Logger) openExistingOrNew(writeLen int) error {
 	return nil
 }
 
-// Try to open a new log file, creating a backup if one already exists.
+// openNew tries to open a new log file, creating a backup if one
+// already exists.
 func (l *Logger) openNew() error {
 	// Create the log file directories.
 	err := os.MkdirAll(filepath.Dir(l.Filename), 0744)
@@ -139,6 +148,7 @@ func (l *Logger) openNew() error {
 	return nil
 }
 
+// backupName returns a new backup name for a log file.
 func backupName(name string) string {
 	// Get the parts of the filepath.
 	dir := filepath.Dir(name)
@@ -153,7 +163,8 @@ func backupName(name string) string {
 	return filepath.Join(dir, fmt.Sprintf("%s-%s%s", prefix, timestamp, ext))
 }
 
-// Returns the maximize size in bytes of log files before rolling.
+// maxSize returns the maximum size in bytes of the log file before
+// rolling over.
 func (l *Logger) maxSize() int64 {
 	megabyte := int64(1024 * 1024)
 	return l.MaxSize * megabyte
