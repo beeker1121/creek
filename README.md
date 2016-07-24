@@ -1,4 +1,4 @@
-# Creek [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/beeker1121/creek) [![License](http://img.shields.io/badge/license-mit-blue.svg)](https://raw.githubusercontent.com/beeker1121/creek/master/LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/beeker1121/creek)](https://goreportcard.com/report/github.com/beeker1121/creek)
+# Creek [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/beeker1121/creek) [![License](http://img.shields.io/badge/license-mit-blue.svg)](https://raw.githubusercontent.com/beeker1121/creek/master/LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/beeker1121/creek)](https://goreportcard.com/report/github.com/beeker1121/creek) [![Build Status](https://travis-ci.org/beeker1121/creek.svg?branch=master)](https://travis-ci.org/beeker1121/creek)
 
 A simple log rotator for Go on Linux platforms.
 
