@@ -47,10 +47,10 @@ func TestRollover(t *testing.T) {
 	path := "testdir_" + timeNano
 	megabyte := int64(1024 * 1024)
 
-	logger := log.New(New(path+"/test.log", 1), "", 0)
+	logger := New(path+"/test.log", 1)
 
-	for i := 0; int64(i) < megabyte/2; i++ {
-		logger.Print("a")
+	for i := 0; int64(i) < megabyte; i++ {
+		logger.Write([]byte{0x01})
 	}
 
 	file, err := os.Open(path + "/test.log")
@@ -77,7 +77,7 @@ func TestRollover(t *testing.T) {
 		t.Errorf("Expected only one file, found %d", len(files))
 	}
 
-	logger.Print("b")
+	logger.Write([]byte{0x02})
 
 	files, err = ioutil.ReadDir(path)
 	if err != nil {
