@@ -10,8 +10,8 @@ import (
 
 // Logger defines our custom Logger type.
 type Logger struct {
-	Filename string
-	MaxSize  int64
+	Filename string // the file to log to
+	MaxSize  int64  // max file size in MB
 	file     *os.File
 	size     int64
 	mu       sync.Mutex
