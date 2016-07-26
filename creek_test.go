@@ -2,6 +2,7 @@ package creek
 
 import (
 	"bufio"
+	"compress/gzip"
 	"io/ioutil"
 	"log"
 	"os"
@@ -84,8 +85,61 @@ func TestRollover(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(files) != 2 {
-		t.Errorf("Expected to find two files, found %d", len(files))
+	if len(files) < 2 {
+		t.Errorf("Expected to find two or more files, found %d", len(files))
+	}
+
+	if err := os.RemoveAll(path); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestGZIP(t *testing.T) {
+	timeNano := strconv.FormatInt(time.Now().UnixNano(), 10)
+	path := "testdir_" + timeNano
+
+	err := os.MkdirAll(path, 0744)
+	if err != nil {
+		t.Error(err)
+	}
+
+	file, err := os.OpenFile(path+"/test.log", os.O_CREATE|os.O_WRONLY, os.FileMode(0644))
+	if err != nil {
+		t.Error(err)
+	}
+
+	fileString := "This is a test string that will be compressed and decompressed to verify no data loss."
+
+	if _, err = file.Write([]byte(fileString)); err != nil {
+		t.Error(err)
+	}
+	file.Close()
+
+	compressLogFile(path + "/test.log")
+
+	if _, err = os.Stat(path + "/test.log"); !os.IsNotExist(err) {
+		t.Errorf("Expected error to return true on IsNotExist check, got false: %s\n", err)
+	}
+
+	filegz, err := os.Open(path + "/test.log.gz")
+	if err != nil {
+		t.Error(err)
+	}
+	defer filegz.Close()
+
+	gz, err := gzip.NewReader(filegz)
+	if err != nil {
+		t.Error(err)
+	}
+	defer gz.Close()
+
+	s, err := ioutil.ReadAll(gz)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(s) != fileString {
+		t.Error("Compressed file string does not match original string")
 	}
 
 	if err := os.RemoveAll(path); err != nil {

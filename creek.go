@@ -1,7 +1,9 @@
 package creek
 
 import (
+	"compress/gzip"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -86,6 +88,43 @@ func (l *Logger) rotate() error {
 	return nil
 }
 
+// compressLogFile compresses a log file.
+func compressLogFile(name string) {
+	// Open the given log file for reading.
+	file, err := os.Open(name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not open log file for compression: %s\n", err)
+		return
+	}
+	defer file.Close()
+
+	// Create a file to save the compressed data to.
+	filegz, err := os.OpenFile(name+".gz", os.O_CREATE|os.O_WRONLY, os.FileMode(0644))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not create file for compression: %s\n", err)
+		return
+	}
+	defer filegz.Close()
+
+	// Create new gzip Writer.
+	gz := gzip.NewWriter(filegz)
+	defer gz.Close()
+
+	// Compress the log file.
+	if _, err = io.Copy(gz, file); err != nil {
+		fmt.Fprintf(os.Stderr, "Error compressing log file: %s\n", err)
+		return
+	}
+
+	// Remove the old file.
+	if err = os.Remove(name); err != nil {
+		fmt.Fprintf(os.Stderr, "Error removing old log file: %s\n", err)
+		return
+	}
+
+	return
+}
+
 // openExistingOrNew tries to open the existing log file.
 func (l *Logger) openExistingOrNew(writeLen int) error {
 	// Get or create the log file.
@@ -103,7 +142,7 @@ func (l *Logger) openExistingOrNew(writeLen int) error {
 	}
 
 	// Try to open the current log file.
-	file, err := os.OpenFile(l.Filename, os.O_APPEND|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(l.Filename, os.O_APPEND|os.O_WRONLY, os.FileMode(0644))
 	if err != nil {
 		// If we fail to open, just ignore and open a new one.
 		return l.openNew()
@@ -131,9 +170,13 @@ func (l *Logger) openNew() error {
 		mode = info.Mode()
 
 		// Rename existing log file as backup.
-		if err := os.Rename(l.Filename, backupName(l.Filename)); err != nil {
+		backup := backupName(l.Filename)
+		if err := os.Rename(l.Filename, backup); err != nil {
 			return fmt.Errorf("Could not rename log file: %s", err)
 		}
+
+		// Compress the backup log file.
+		go compressLogFile(backup)
 	}
 
 	file, err := os.OpenFile(l.Filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
